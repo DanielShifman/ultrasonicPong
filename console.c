@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -31,6 +32,8 @@ void reverse_direction (); /* reverses the direction of the ball */
 void refresh (UART_Handle uart); /* prints game process */
 int calculate (int c, UART_Handle uart); /* calculates next positions of objects (player1, player2, ball, etc.) */
 void init (); /* initializes the player1, player2, ball structures */
+int p1score = 0;
+int p2score = 0;
 
 
 struct
@@ -58,14 +61,16 @@ struct
 
 void pongMain (UART_Handle uart)
 {
-    char testUART[] = "\r\nmain\r\n";
-    UART_write(uart, testUART, sizeof(testUART));
+    PONG: while(0);
+    //char testUART[] = "\r\nmain\r\n";
+    //UART_write(uart, testUART, sizeof(testUART));
     int c; /* stores code of a pressed key */
     init (); /* initializes the structures */
     refresh (uart); /* clears the screen and prints characters */
-    while (c = getchar ())
+    while (c = getchar())
         if (calculate (c, uart)) /* refresh () only if one if certain keys was pressed, if the escape key was pressed it calls exit (0) */
             refresh (uart);
+    goto PONG;
 }
 
 
@@ -73,18 +78,33 @@ void refresh (UART_Handle uart)
 {
     int i = 0, j = 0;
     UART_write(uart, cleanDisplay, sizeof(cleanDisplay));
-    char testUART[] = "\r\nrefresh\r\n";
-    UART_write(uart, testUART, sizeof(testUART));
-    while (i < 25)
-    {
+    //char testUART[] = "\r\nrefresh\r\n";
+    //UART_write(uart, testUART, sizeof(testUART));
+
+    //char scores[] = "\t\t\t\tSCORE GOES HERE\r\n";
+    //UART_write(uart, scores, sizeof(scores));
+
+    char delim[] = "\t\t\t\t";
+    UART_write(uart, delim, sizeof(delim));
+    char score1[4];
+    score1[0] = p1score + '0';
+    UART_write(uart, score1, sizeof(score1));
+    char delim1[] = " | ";
+    UART_write(uart, delim1, sizeof(delim1));
+    char score2[4];
+    score2[0] = p2score + '0';
+    UART_write(uart, score2, sizeof(score2));
+    char delim2[] = "\r\n";
+    UART_write(uart, delim2, sizeof(delim2));
+
+
+    while (i < 25) {
         j = 0;
-        while (j < 80)
-        {
+        while (j < 80) {
             if ((j == player1.x && i == player1.y) || (j == player2.x && i == player2.y) || (j == ball.x && i == ball.y)) {
                 const char ch[] = {219};
                 UART_write(uart, ch, sizeof(ch));
-            }
-            else {
+            } else {
                 const char dh[] = " ";
                 UART_write(uart, dh, sizeof(dh));
             }
@@ -115,6 +135,14 @@ int calculate (int c, UART_Handle uart)
 {
     if ((((ball.x == (player1.x + 1)) && (ball.y == player1.y)) || (ball.x == (player2.x - 1) && (ball.y == player2.y))) || (ball.y == 0 || ball.y == 24))
         reverse_direction ();
+    else if ((ball.x == (player1.x + 1)) && (ball.y != player1.y)) {
+        p2score++;
+        return 0; // End round
+    }
+    else if ((ball.x == (player2.x - 1)) && (ball.y != player2.y)) {
+        p1score++;
+        return 0; // End round
+    }
     if (ball.direction == LEFT_DOWN)
     {
         ball.x -= ball.speed.x;
@@ -146,11 +174,11 @@ int calculate (int c, UART_Handle uart)
     else if (c == ESC)
     {
         UART_write(uart, cleanDisplay, sizeof(cleanDisplay));
-        char testUART[] = "\r\ncalculate\r\n";
+        //char testUART[] = "\r\ncalculate\r\n";
         UART_write(uart, testUART, sizeof(testUART));
     }
     else
-        return 0;
+        return 0; // End round
     return 1;
 }
 
